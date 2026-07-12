@@ -1,0 +1,9 @@
+langchain
+langchain-core
+langchain-openai
+langchain-groq
+langchain-community
+python-dotenv
+streamlit
+ipykernel
+jupyter
