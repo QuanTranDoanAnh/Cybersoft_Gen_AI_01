@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+openai
+python-dotenv
+pydantic
+email-validator
+psycopg[binary]
+langchain
+langchain-core
+langchain-openai
+langchain-groq
