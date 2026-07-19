@@ -1,0 +1,19 @@
+.DS_Store
+
+# Python
+.venv/
+myenv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Test/cache output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
