@@ -1,0 +1,9 @@
+streamlit
+pandas
+pydantic
+python-dotenv
+langchain
+langchain-openai
+pypdf
+python-docx
+langchain-groq
