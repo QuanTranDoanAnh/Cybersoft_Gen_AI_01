@@ -1,0 +1,15 @@
+langchain 
+langchain-openai
+langchain-community 
+langchain-core
+streamlit
+beautifulsoup4 
+requests
+python-dotenv
+ddgs
+wikipedia
+arxiv<2
+pymupdf
+wikipedia
+arxiv
+pymupdf
