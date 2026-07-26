@@ -55,7 +55,7 @@ def get_overdue_tasks() -> list[dict]:
     """Lấy các công việc chưa hoàn thành và đã quá hạn."""
     return [
         task.model_dump(mode="json")
-        for task in store.list_tasks
+        for task in store.list_tasks()
         if task.status != "done" and task.due_date < date.today()
     ]
 
