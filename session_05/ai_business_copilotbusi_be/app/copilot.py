@@ -22,7 +22,7 @@ def get_dashboard_metrics() -> dict:
     """Lấy các KPI tổng quan hiện tại của doanh nghiệp."""
     customers = store.list_customers()
     tasks = store.list_tasks()
-    open_tasks = [task for task in tasks if task.status is not "done"]
+    open_tasks = [task for task in tasks if task.status != "done"]
 
     return {
         "revenue": sum(

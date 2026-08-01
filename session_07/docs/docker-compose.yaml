@@ -1,0 +1,86 @@
+name: stem-reasoning-lab
+
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stemlab}
+      POSTGRES_USER: ${POSTGRES_USER:-stemlab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stemlab_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stemlab} -d ${POSTGRES_DB:-stemlab}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: STEM Reasoning Lab
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-stemlab}:${POSTGRES_PASSWORD:-stemlab_change_me}@database:5432/${POSTGRES_DB:-stemlab}
+      SECRET_KEY: ${SECRET_KEY:-replace-this-secret-before-production}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-15}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-14}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3001}
+      HF_EXECUTION_MODE: inference
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_MODEL_ID: ${HF_MODEL_ID:-Qwen/Qwen2.5-7B-Instruct}
+      HF_INFERENCE_PROVIDER: ${HF_INFERENCE_PROVIDER:-auto}
+      HF_MAX_NEW_TOKENS: ${HF_MAX_NEW_TOKENS:-1400}
+      HF_TEMPERATURE: ${HF_TEMPERATURE:-0.35}
+      HF_TIMEOUT_SECONDS: ${HF_TIMEOUT_SECONDS:-120}
+      SELF_CONSISTENCY_SAMPLES: ${SELF_CONSISTENCY_SAMPLES:-5}
+    ports:
+      - "${BACKEND_PORT:-8001}:8001"
+    depends_on:
+      database:
+        condition: service_healthy
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/api/health', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8001/api}
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "${FRONTEND_PORT:-3001}:3001"
+    depends_on:
+      backend:
+        condition: service_healthy
+        restart: true
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "wget -qO- http://127.0.0.1:3001/ >/dev/null || exit 1"
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+
+volumes:
+  postgres_data:
