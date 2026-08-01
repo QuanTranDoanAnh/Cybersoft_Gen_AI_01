@@ -173,7 +173,67 @@ streamlit run streamlit_app.py
 
 Không có API key vẫn chạy được app ở chế độ **Demo** để quan sát cơ chế memory.
 
-## Phần còn dang dở
+## Ghi chú
 
-- `invoke_template()` (`streamlit_app.py:308`) vẫn là `return` rỗng → tab **Prompt Template** chưa hoạt động. Cần dựng một `ChatPromptTemplate` nhận `source_lang` / `target_lang` / `tone` / `text` rồi `prompt | model | StrOutputParser()`, đúng kỹ thuật ở mục 3–4.
-- `build_chain()` (`streamlit_app.py:249`) mới xử lý nhánh `context_enabled=True`; khi tắt toggle memory ở sidebar, hàm trả về `None` và `invoke_chat` sẽ lỗi.
+Hai hàm trong `streamlit_app.py` ban đầu để trống (`return` rỗng) — nay đã hoàn thiện.
+
+### `invoke_template()` — tab Prompt Template
+
+Trước đây trả `None` nên tab này không chạy. Bản hoàn thiện áp dụng đúng mục 3–4:
+
+```python
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Bạn là một dịch giả chuyên nghiệp. Hãy dịch nội dung của người dùng "
+               "từ {source_lang} sang {target_lang} với giọng văn {tone}. "
+               "Chỉ trả về bản dịch, không thêm giải thích hay ghi chú."),
+    ("human", "{text}"),
+])
+chain = prompt | model | StrOutputParser()
+return chain.invoke({"source_lang": ..., "target_lang": ..., "tone": ..., "text": ...})
+```
+
+Prompt có **4 biến** — minh hoạ rõ ý "template là một hàm nhận tham số", thay vì nối chuỗi bằng f-string. `StrOutputParser` để chain trả thẳng `str` cho `st.markdown()`.
+
+### `build_chain()` khi tắt memory
+
+Trước đây chỉ có nhánh `context_enabled=True`, tắt toggle memory ở sidebar là hàm trả `None` và `invoke_chat` lỗi ngay. Bản hoàn thiện thêm nhánh không memory — prompt **không có `MessagesPlaceholder`**, nên model chỉ nhìn thấy câu hỏi hiện tại, đúng hành vi "không nhớ ngữ cảnh" của buổi 1:
+
+```python
+prompt = ChatPromptTemplate.from_messages([
+    ("system", system_prompt),
+    ("human", "{input}"),
+])
+return prompt | model
+```
+
+Một chi tiết thiết kế đáng lưu ý: khi tắt memory, `invoke_chat()` **vẫn ghi** cặp câu hỏi/trả lời vào history bằng `add_user_message()` / `add_ai_message()`:
+
+```python
+response = chain.invoke({"input": user_input})       # không truyền session_id
+answer = message_text(response.content)
+
+history = get_history(session_id)
+history.add_user_message(user_input)
+history.add_ai_message(answer)
+```
+
+Lý do: nếu không ghi thì cuộc hội thoại biến mất khỏi màn hình sau mỗi lần Streamlit rerun, và tab Memory Viewer trống trơn — app trông như hỏng. Tách bạch được hai việc:
+
+| | Model có thấy lịch sử? | Lịch sử có được lưu để hiển thị? |
+| --- | --- | --- |
+| Memory bật | Có (qua `MessagesPlaceholder`) | Có (`RunnableWithMessageHistory` tự ghi) |
+| Memory tắt | **Không** | Có (ghi thủ công) |
+
+Đây chính là pattern mà buổi 3 dùng lại ở quy mô lớn hơn: `PersistentChatMessageHistory` với cờ `use_context` — `add_messages()` luôn lưu, còn property `messages` trả `[]` khi tắt ngữ cảnh.
+
+### Kiểm chứng
+
+Chạy thử ba nhánh ở chế độ Demo (model giả, đếm số `HumanMessage` nhìn thấy trong prompt):
+
+```
+template   -> 'DEMO(thấy 1 user msg): Xin chào'          (trả về str)
+memory OFF -> DEMO(thấy 1 user msg): Tôi tên gì?         history vẫn ghi: 4 messages
+memory ON  -> DEMO(thấy 2 user msg): Tôi tên gì?
+```
+
+Lượt thứ hai: memory tắt thì model chỉ thấy 1 message, memory bật thì thấy 2 — đúng như thiết kế.

@@ -9,7 +9,7 @@ Mỗi buổi học nằm trong một thư mục `session_XX/` kèm README riêng
 | # | Buổi | Ngày học | Nội dung chính | Trạng thái code |
 | --- | --- | --- | --- | --- |
 | 1 | [Gọi OpenAI API & chatbot có ngữ cảnh](session_01/README.md) | 04/07/2026 | OpenAI SDK, `messages`, Streamlit, lưu lịch sử JSON | ✅ Đầy đủ |
-| 2 | [LangChain, Groq và memory theo `session_id`](session_02/README.md) | 07/07/2026 | LCEL, `ChatPromptTemplate`, `RunnableWithMessageHistory` | ⚠️ Còn 2 hàm dang dở |
+| 2 | [LangChain, Groq và memory theo `session_id`](session_02/README.md) | 07/07/2026 | LCEL, `ChatPromptTemplate`, `RunnableWithMessageHistory` | ✅ Đầy đủ |
 | 3 | [Document Loader và tóm tắt văn bản dài](session_03/README.md) | 11/07/2026 | `YoutubeLoader`, chunking, map-reduce, `StrOutputParser` | ✅ Đầy đủ |
 | 4 | [Structured Output](session_04/README.md) | 14/07/2026 | Pydantic schema, `with_structured_output()`, nested model | ✅ Đầy đủ |
 | 5 | [Tool Calling](session_05/README.md) | 17/07/2026 | `@tool`, `bind_tools()`, vòng lặp agent, human-in-the-loop | ✅ Đầy đủ |

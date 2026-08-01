@@ -11,6 +11,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableLambda
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -273,7 +274,15 @@ def build_chain(
             history_messages_key="history",
         )
 
-    return
+    # 3. Memory tắt: prompt không có MessagesPlaceholder, model chỉ thấy câu hỏi
+    # hiện tại -> đúng hành vi "không nhớ ngữ cảnh" của buổi 1.
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            ("human", "{input}"),
+        ]
+    )
+    return prompt | model
 
 
 def invoke_chat(
@@ -294,15 +303,27 @@ def invoke_chat(
         context_enabled=context_enabled,
     )
 
-    response = chain.invoke(
-        {"input": user_input},
-        config={
-            "configurable": {
-                "session_id": session_id,
-            }
-        },
-    )
-    return message_text(response.content)
+    # 2. Có memory: RunnableWithMessageHistory tự đọc/ghi lịch sử theo session_id
+    if context_enabled:
+        response = chain.invoke(
+            {"input": user_input},
+            config={
+                "configurable": {
+                    "session_id": session_id,
+                }
+            },
+        )
+        return message_text(response.content)
+
+    # 3. Không memory: model không thấy lịch sử, nhưng vẫn ghi lại để tab Chat và
+    # Memory Viewer hiển thị được cuộc hội thoại sau mỗi lần rerun.
+    response = chain.invoke({"input": user_input})
+    answer = message_text(response.content)
+
+    history = get_history(session_id)
+    history.add_user_message(user_input)
+    history.add_ai_message(answer)
+    return answer
 
 
 def invoke_template(
@@ -314,8 +335,33 @@ def invoke_template(
     tone: str,
     text: str,
 ) -> str:
-    # Code tiếp ở đây
-    return
+    model = build_model(provider, model_name, temperature)
+
+    # Prompt có 4 biến -> minh hoạ ChatPromptTemplate như một hàm nhận tham số,
+    # thay vì nối chuỗi bằng f-string.
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Bạn là một dịch giả chuyên nghiệp. Hãy dịch nội dung của người dùng "
+                "từ {source_lang} sang {target_lang} với giọng văn {tone}. "
+                "Chỉ trả về bản dịch, không thêm giải thích hay ghi chú.",
+            ),
+            ("human", "{text}"),
+        ]
+    )
+
+    # StrOutputParser để chain trả thẳng str thay vì AIMessage.
+    chain = prompt | model | StrOutputParser()
+
+    return chain.invoke(
+        {
+            "source_lang": source_lang,
+            "target_lang": target_lang,
+            "tone": tone,
+            "text": text,
+        }
+    )
 
 
 def render_sidebar() -> dict[str, Any]:
