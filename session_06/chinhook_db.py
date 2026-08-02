@@ -1,4 +1,6 @@
-import requests, pathlib
+import pathlib
+
+import requests
 
 url = "https://storage.googleapis.com/benchmarks-artifacts/chinook/Chinook.db"
 local_path = pathlib.Path("Chinook.db")

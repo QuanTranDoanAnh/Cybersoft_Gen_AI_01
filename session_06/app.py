@@ -10,7 +10,6 @@ from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_openai import ChatOpenAI
 from sqlalchemy import URL, create_engine
 
-
 load_dotenv(Path(__file__).with_name(".env"))
 
 LOCAL_DB = "USE_LOCAL_DB"
@@ -59,7 +58,9 @@ st.markdown(
 )
 
 st.title("🦜 Chat with SQL DB")
-st.caption("Đặt câu hỏi bằng ngôn ngữ tự nhiên và nhận kết quả trực tiếp từ cơ sở dữ liệu.")
+st.caption(
+    "Đặt câu hỏi bằng ngôn ngữ tự nhiên và nhận kết quả trực tiếp từ cơ sở dữ liệu."
+)
 
 database_option = st.sidebar.radio(
     "Choose a database",
@@ -161,11 +162,7 @@ Format the final answer as clean Markdown in the same language as the user:
 """
 
 # Create Agent
-agent = create_agent(
-    llm, 
-    tools=tools, 
-    system_prompt=system_prompt
-)
+agent = create_agent(llm, tools=tools, system_prompt=system_prompt)
 
 if "messages" not in st.session_state or st.sidebar.button("Clear chat history"):
     st.session_state.messages = [
@@ -222,6 +219,4 @@ if user_query:
         else:
             st.markdown(response)
 
-    st.session_state.messages.append(
-        {"role": "assistant", "content": response}
-    )
+    st.session_state.messages.append({"role": "assistant", "content": response})
