@@ -13,7 +13,7 @@ Mỗi buổi học nằm trong một thư mục `session_XX/` kèm README riêng
 | 3 | [Document Loader và tóm tắt văn bản dài](session_03/README.md) | 11/07/2026 | `YoutubeLoader`, chunking, map-reduce, `StrOutputParser` | ✅ Đầy đủ |
 | 4 | [Structured Output](session_04/README.md) | 14/07/2026 | Pydantic schema, `with_structured_output()`, nested model | ✅ Đầy đủ |
 | 5 | [Tool Calling](session_05/README.md) | 17/07/2026 | `@tool`, `bind_tools()`, vòng lặp agent, human-in-the-loop | ✅ Đầy đủ |
-| 6 | [SQL Agent](session_06/README.md) | 20/07/2026 | `SQLDatabaseToolkit`, `create_agent()`, `agent.stream()` | ✅ Đầy đủ |
+| 6 | [SQL Agent](session_06/README.md) | 20/07/2026 | `SQLDatabaseToolkit`, `create_agent()`, `agent.stream()`, project BI copilot | ✅ Đầy đủ |
 | 7 | [HuggingFace `transformers` & Reasoning Prompting](session_07/README.md) | 24/07/2026 | BART, tokenizer/logits, CoT / ToT / Self-Consistency | 📄 Mới có tài liệu |
 | 8 | [HF Inference qua LangChain & đóng gói production](session_08/README.md) | 27/07/2026 | `ChatHuggingFace`, Docker Compose làm cứng bảo mật | 📄 Mới có tài liệu |
 
@@ -50,7 +50,7 @@ Ba chủ đề xuyên suốt, mỗi buổi bồi thêm một lớp:
 | 1–3 | Text tự do, ép định dạng bằng lời trong prompt |
 | 4 | Pydantic schema + `Field(ge/le)` + `Literal[...]` — validate được |
 | 5 | Tool call — model trả về tên hàm + tham số có schema |
-| 6 | SQL có `query_checker` soát lại trước khi chạy |
+| 6 | SQL có `query_checker` soát lại trước khi chạy; project dùng structured output ép LLM trả về đặc tả dashboard đúng schema |
 | 7 | Ép format `Answer: <x>` để chấm điểm tự động, có fallback regex |
 
 **3. Minh bạch và an toàn** — hệ thống AI phải cho người dùng kiểm chứng được.
@@ -60,7 +60,7 @@ Ba chủ đề xuyên suốt, mỗi buổi bồi thêm một lớp:
 | 3 | "Giữ đúng ý, không bịa" viết thẳng vào prompt |
 | 4 | Cấm suy diễn thông tin không có trong CV, cấm dùng thuộc tính nhạy cảm |
 | 5 | `ToolTrace` ghi lại mọi lời gọi; tool ghi dữ liệu phải qua người phê duyệt |
-| 6 | Hiện lại câu SQL đã dùng; connection mở **read-only** ở tầng driver |
+| 6 | Hiện lại câu SQL đã dùng; connection mở **read-only** ở tầng driver; project thêm `sql_guard` parse AST + allow-list bảng + ép `LIMIT` + `statement_timeout` |
 | 8 | Hiện cả tóm tắt từng chunk lẫn transcript gốc; container `read_only` |
 
 ## Nội dung từng buổi
@@ -89,6 +89,8 @@ Khai báo schema bằng Pydantic, LLM trả về **object Python đã validate**
 
 Dùng toolkit dựng sẵn thay vì tự viết tool. `SQLDatabaseToolkit` cho 4 tool theo đúng quy trình một data analyst: liệt kê bảng → xem schema → **nhờ LLM soát câu SQL** → chạy. `agent.stream()` cho thấy agent tự quyết định cả chuỗi 4 bước. Nhấn mạnh phòng thủ nhiều lớp: prompt cấm DML là lớp một, connection read-only mới là lớp không vượt qua được.
 
+Project cuối buổi (`session_06_project/`) làm ngược lại một cách có chủ đích: **bỏ vòng lặp agent**, chỉ gọi model một lần với structured output để lấy đặc tả dashboard (tiêu đề + 1–6 widget, mỗi widget kèm câu SQL), rồi backend tự chạy SQL sau khi qua validator `sqlglot`. Khi schema nhỏ và output cần đúng khuôn cho máy khác đọc, một lượt gọi rẻ và chắc hơn agent tự dò. Model được gọi lần hai để viết nhận định, nhưng chỉ trên dữ liệu đã truy vấn thật — chống bịa số liệu.
+
 ### [Buổi 7 — HuggingFace `transformers` & Reasoning Prompting](session_07/README.md)
 
 Xuống một tầng trừu tượng: tự tokenize, đọc `logits`, tự decode — để thấy bên trong `.invoke()` có gì. BART minh hoạ "một base model, nhiều head". Phần hai là 4 cấp prompt cho bài toán suy luận: Normal → Chain-of-Thought → Tree-of-Thought → Self-Consistency, đo trên bộ MATH-500 với seed cố định.
@@ -105,7 +107,7 @@ Làm lại đúng bài buổi 3 nhưng bằng model open-source qua `ChatHugging
 | 3 | `genai-shopai-ver2` + `-be` | Next.js + FastAPI + Supabase | Có code |
 | 4 | `cv_ranking` + `cv_ranking_be` | Next.js + FastAPI, chấm CV theo JD | Có code |
 | 5 | `ai_business_copilot` + `...busi_be` | Next.js + FastAPI + Postgres + Docker | Có code, có test |
-| 6 | BI copilot trên dữ liệu TV shows | Postgres + backend + frontend | Mới có `docker-compose.yml` |
+| 6 | `session_06_project` — InsightFlow, BI copilot trên dữ liệu TV shows | Next.js + FastAPI + Postgres + Docker | Có code, có test |
 | 7 | STEM Reasoning Lab | Postgres + FastAPI + Next.js, HF Inference | Mới có compose + test cases |
 | 8 | ScholarTube Edu | Postgres + backend + frontend, HF Inference | Mới có compose |
 
@@ -115,8 +117,8 @@ Làm lại đúng bài buổi 3 nhưng bằng model open-source qua `ChatHugging
 | --- | --- |
 | LLM provider | OpenAI, Groq, Hugging Face Inference |
 | Framework | LangChain (`langchain-core`, `-openai`, `-groq`, `-community`, `-huggingface`), `transformers` |
-| Giao diện | Streamlit (buổi 1–3, 6, 8), Next.js + Tailwind (các project fullstack) |
-| Backend | FastAPI, SQLAlchemy, Pydantic |
+| Giao diện | Streamlit (buổi 1–3, 6, 8), Next.js + Tailwind (các project fullstack), ECharts + react-grid-layout + zustand (dashboard buổi 6) |
+| Backend | FastAPI, SQLAlchemy, Pydantic, `psycopg`, `sqlglot` (validate SQL do LLM sinh) |
 | Dữ liệu | SQLite, Postgres, Supabase, MySQL |
 | Hạ tầng | Docker Compose, `python-dotenv` |
 
