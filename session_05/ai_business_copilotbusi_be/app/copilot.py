@@ -10,7 +10,6 @@ from openai import OpenAI, OpenAIError
 from . import store
 from .models import ApprovalProposal, CopilotResponse, ToolTrace, Visualization
 
-
 SYSTEM_PROMPT = """Bạn là AI Copilot cho hệ thống quản trị doanh nghiệp.
 Trả lời ngắn gọn bằng tiếng Việt, dựa trên dữ liệu tool. Không tự bịa số liệu.
 Các thao tác ghi dữ liệu chỉ được tạo đề xuất chờ người dùng phê duyệt.
